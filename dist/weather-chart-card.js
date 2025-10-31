@@ -68,7 +68,7 @@ const locale = {
     'sunny': 'Jasno',
     'windy': 'Veterno',
     'windy-variant': 'Veterno'
-  },  
+  },
   de: {
     'tempHi': 'Temperatur',
     'tempLo': 'Nachttemperatur',
@@ -934,7 +934,7 @@ class WeatherChartCardEditor extends s {
       this.hass.states[config.entity].attributes &&
       this.hass.states[config.entity].attributes.description !== undefined
     ) || config.description !== undefined;
-    this.fetchEntities();	  
+    this.fetchEntities();
     this.requestUpdate();
   }
 
@@ -1614,6 +1614,12 @@ class WeatherChartCardEditor extends s {
                 type="number"
                 .value="${forecastConfig.number_of_forecasts || '0'}"
                 @change="${(e) => this._valueChanged(e, 'forecast.number_of_forecasts')}"
+              ></ha-textfield>
+              <ha-textfield
+                label="First forecast"
+                type="number"
+                .value="${forecastConfig.first_forecast_index || '0'}"
+                @change="${(e) => this._valueChanged(e, 'forecast.first_forecast_index')}"
               ></ha-textfield>
               </div>
             </div>
@@ -17834,8 +17840,9 @@ static getStubConfig(hass, unusedEntities, allEntities) {
       condition_icons: true,
       round_temp: false,
       type: 'daily',
-      number_of_forecasts: '0', 
-      disable_animation: false, 
+      number_of_forecasts: '0',
+      first_forecast_index: '0',
+      disable_animation: false,
     },
   };
 }
@@ -17854,6 +17861,7 @@ static getStubConfig(hass, unusedEntities, allEntities) {
       windDirection: {type: Number},
       forecastChart: {type: Object},
       forecastItems: {type: Number},
+      firstForecast: {type: Number},
       forecasts: { type: Array }
     };
   }
@@ -17888,6 +17896,7 @@ setConfig(config) {
       round_temp: false,
       type: 'daily',
       number_of_forecasts: '0',
+      first_forecast_index: '0',
       '12hourformat': false,
       ...config.forecast,
     },
@@ -18021,11 +18030,13 @@ measureCard() {
   const card = this.shadowRoot.querySelector('ha-card');
   let fontSize = this.config.forecast.labels_font_size;
   const numberOfForecasts = this.config.forecast.number_of_forecasts || 0;
+  const firstItemIndex = this.config.forecast.first_forecast_index || 0;
 
   if (!card) {
     return;
   }
 
+  this.firstForecast = firstItemIndex;
   this.forecastItems = numberOfForecasts > 0 ? numberOfForecasts : Math.round(card.offsetWidth / (fontSize * 6));
   this.drawChart();
 }
@@ -18228,7 +18239,7 @@ cancelAutoscroll() {
   }
 }
 
-drawChart({ config, language, weather, forecastItems } = this) {
+drawChart({ config, language, weather, forecastItems, firstForecast } = this) {
   if (!this.forecasts || !this.forecasts.length) {
     return [];
   }
@@ -18414,7 +18425,7 @@ drawChart({ config, language, weather, forecastItems } = this) {
               callback: function (value, index, values) {
                   var datetime = this.getLabelForValue(value);
                   var dateObj = new Date(datetime);
-        
+
                   var timeFormatOptions = {
                       hour12: config.use_12hour_format,
                       hour: 'numeric',
@@ -18522,8 +18533,8 @@ drawChart({ config, language, weather, forecastItems } = this) {
   });
 }
 
-computeForecastData({ config, forecastItems } = this) {
-  var forecast = this.forecasts ? this.forecasts.slice(0, forecastItems) : [];
+computeForecastData({ config, forecastItems, firstForecast } = this) {
+  var forecast = this.forecasts ? this.forecasts.slice(firstForecast, forecastItems) : [];
   var roundTemp = config.forecast.round_temp == true;
   var dateTime = [];
   var tempHigh = [];
@@ -18996,8 +19007,8 @@ const timeOptions = {
   `;
 }
 
-renderForecastConditionIcons({ config, forecastItems, sun } = this) {
-  const forecast = this.forecasts ? this.forecasts.slice(0, forecastItems) : [];
+renderForecastConditionIcons({ config, forecastItems, sun, firstForecast } = this) {
+  const forecast = this.forecasts ? this.forecasts.slice(firstForecast, forecastItems) : [];
 
   if (config.forecast.condition_icons === false) {
     return x``;
@@ -19055,14 +19066,14 @@ renderForecastConditionIcons({ config, forecastItems, sun } = this) {
   `;
 }
 
-renderWind({ config, weather, windSpeed, windDirection, forecastItems } = this) {
+renderWind({ config, weather, windSpeed, windDirection, forecastItems, firstForecast } = this) {
   const showWindForecast = config.forecast.show_wind_forecast !== false;
 
   if (!showWindForecast) {
     return x``;
   }
 
-  const forecast = this.forecasts ? this.forecasts.slice(0, forecastItems) : [];
+  const forecast = this.forecasts ? this.forecasts.slice(firstForecast, forecastItems) : [];
 
   return x`
     <div class="wind-details">

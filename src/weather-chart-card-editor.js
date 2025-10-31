@@ -69,7 +69,7 @@ class WeatherChartCardEditor extends LitElement {
       this.hass.states[config.entity].attributes &&
       this.hass.states[config.entity].attributes.description !== undefined
     ) || config.description !== undefined;
-    this.fetchEntities();	  
+    this.fetchEntities();
     this.requestUpdate();
   }
 
@@ -749,6 +749,12 @@ class WeatherChartCardEditor extends LitElement {
                 type="number"
                 .value="${forecastConfig.number_of_forecasts || '0'}"
                 @change="${(e) => this._valueChanged(e, 'forecast.number_of_forecasts')}"
+              ></ha-textfield>
+              <ha-textfield
+                label="First forecast"
+                type="number"
+                .value="${forecastConfig.first_forecast_index || '0'}"
+                @change="${(e) => this._valueChanged(e, 'forecast.first_forecast_index')}"
               ></ha-textfield>
               </div>
             </div>
